@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>ChatMessenger
+
+      
+    </title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      #connect-form,
+      #chat-container {
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      #connect-form input[type="text"],
+      #message-input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+
+      #connect-button,
+      #send-button {
+        width: 100%;
+        padding: 8px;
+        background-color: #4CAF50;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }
+
+      #connect-button:hover,
+      #send-button:hover {
+        background-color: #45a049;
+      }
+
+      #chat-messages {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      #chat-messages li {
+        background-color: #f1f1f1;
+        padding: 8px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Messenger</h1>
+
+    <div id="connect-form">
+      <h2>Ingresa tu nombre de usuario:</h2>
+      <input type="text" id="username-input">
+      <button id="connect-button">Conectar</button>
+    </div>
+
+    <div id="chat-container" style="display: none;">
+      <h2>Chat</h2>
+      <ul id="chat-messages"></ul>
+      <input type="text" id="message-input">
+      <button id="send-button">Enviar</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <script>
+      const socket = io();
+
+      const connectForm = document.getElementById('connect-form');
+      const usernameInput = document.getElementById('username-input');
+      const connectButton = document.getElementById('connect-button');
+
+      const chatContainer = document.getElementById('chat-container');
+      const chatMessages = document.getElementById('chat-messages');
+      const messageInput = document.getElementById('message-input');
+      const sendButton = document.getElementById('send-button');
+
+      connectButton.addEventListener('click', () => {
+        const username = usernameInput.value.trim();
+
+        if (username) {
+          socket.emit('username', username);
+
+          connectForm.style.display = 'none';
+          chatContainer.style.display = 'block';
+        }
+      });
+
+      socket.on('userJoined', (username) => {
+        const userJoinedMessage = document.createElement('li');
+        userJoinedMessage.textContent = `${username} se ha unido al chat.`;
+        chatMessages.appendChild(userJoinedMessage);
+      });
+
+      socket.on('chatMessage', (data) => {
+        const { username, message, time } = data;
+        const messageItem = document.createElement('li');
+        const formattedTime = moment(time).format('HH:mm:ss');
+        messageItem.innerHTML = `<strong>${username}</strong> - ${formattedTime}<br>${message}`;
+        chatMessages.appendChild(messageItem);
+      });
+
+      socket.on('userLeft', (username) => {
+        const userLeftMessage = document.createElement('li');
+        userLeftMessage.textContent = `${username} ha abandonado el chat.`;
+        chatMessages.appendChild(userLeftMessage);
+      });
+
+      sendButton.addEventListener('click', () => {
+        const message = messageInput.value.trim();
+
+        if (message) {
+          socket.emit('chatMessage', message);
+
+          const messageItem = document.createElement('li');
+          messageItem.innerHTML = `<strong>Tú</strong> - ${moment().format('HH:mm:ss')}<br>${message}`;
+          chatMessages.appendChild(messageItem);
+
+          messageInput.value = '';
+        }
+      });
+    </script>
+  </body>
+</html>
